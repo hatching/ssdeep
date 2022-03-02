@@ -1,9 +1,9 @@
-package ssdeep
-
 // Copyright (c) 2015, Arbo von Monkiewitsch All rights reserved.
 // Copyright (c) 2017, Lukas Rist All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
+package ssdeep
 
 func distance(str1, str2 string) int {
 	var cost, lastdiag, olddiag int

@@ -1,3 +1,8 @@
+// Copyright (c) 2015, Arbo von Monkiewitsch All rights reserved.
+// Copyright (c) 2017, Lukas Rist All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package main
 
 import (
@@ -5,8 +10,6 @@ import (
 	"os"
 
 	"github.com/glaslos/ssdeep"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -17,21 +20,7 @@ var (
 )
 
 func main() {
-	fmt.Printf("ssdeep,%s--blocksize:hash:hash,filename\n", VERSION)
-
-	pflag.Bool("force", false, "Force hash on error or invalid input length")
-	pflag.Bool("version", false, "Print version")
-	pflag.Parse()
-	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
-		panic(err)
-	}
-	if viper.GetBool("version") {
-		fmt.Printf("%s %s\n", VERSION, BUILDDATE)
-		return
-	}
-	ssdeep.Force = viper.GetBool("force")
-
-	args := pflag.Args()
+	args := os.Args[1:]
 	if len(args) < 1 {
 		fmt.Println("Please provide a file path: ./ssdeep /tmp/file")
 		os.Exit(1)
@@ -58,13 +47,12 @@ func main() {
 		} else if err != nil {
 			fmt.Println(err)
 		} else {
-			fmt.Println("The files doesn't match")
+			fmt.Println("The files don't match")
 		}
 	} else {
+		fmt.Println(h1, args[0])
 		if err != nil {
-			fmt.Printf("%s,\"%s\"\n%s\n", h1, args[0], err)
-		} else {
-			fmt.Printf("%s,\"%s\"\n", h1, args[0])
+			fmt.Println(err)
 		}
 	}
 }
