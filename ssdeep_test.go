@@ -1,8 +1,10 @@
 package ssdeep
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -10,18 +12,21 @@ import (
 )
 
 func assertNoError(t *testing.T, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatalf("Received unexpected error %+v", err)
 	}
 }
 
 func assertError(t *testing.T, err error) {
+	t.Helper()
 	if err == nil {
 		t.Fatal("An error is expected but got nil.")
 	}
 }
 
 func assertHashEqual(t *testing.T, expected, actual string) {
+	t.Helper()
 	if expected != actual {
 		t.Fatalf("Hash mismatch: %s (expected)\n"+
 			"            != %s (actual)", expected, actual)
@@ -67,13 +72,9 @@ func concatCopyPreAllocate(slices [][]byte) []byte {
 }
 
 func TestRollingHash(t *testing.T) {
-	s := ssdeepState{
-		rollingState: rollingState{
-			window: make([]byte, rollingWindow),
-		},
-	}
+	s := rollingState{}
 	s.rollHash(byte('A'))
-	rh := s.rollingState.rollSum()
+	rh := s.rollSum()
 	if rh != 585 {
 		t.Fatal("Rolling hash not matching")
 	}
@@ -89,6 +90,24 @@ func TestFuzzyBytesOutputsTheRightResult(t *testing.T) {
 
 	expectedResult := "96:PuNQHTo6pYrYJWrYJ6N3w53hpYTdhuNQHTo6pYrYJWrYJ6N3w53hpYTP:+QHTrpYrsWrs6N3g3LaGQHTrpYrsWrsa"
 	assertHashEqual(t, expectedResult, hashResult)
+}
+
+func TestFuzzyHashOutputsTheRightResult(t *testing.T) {
+	b, err := ioutil.ReadFile("LICENSE")
+	assertNoError(t, err)
+
+	b = concatCopyPreAllocate([][]byte{b, b})
+	s := New()
+
+	_, err = io.Copy(s, bytes.NewReader(b))
+	assertNoError(t, err)
+
+	expectedResult := "96:PuNQHTo6pYrYJWrYJ6N3w53hpYTdhuNQHTo6pYrYJWrYJ6N3w53hpYTP:+QHTrpYrsWrs6N3g3LaGQHTrpYrsWrsa"
+	prepend := []byte("prepend")
+
+	sum := s.Sum(prepend)
+
+	assertHashEqual(t, string(append(prepend, expectedResult...)), string(sum))
 }
 
 func TestFuzzyFileOutputsTheRightResult(t *testing.T) {
@@ -140,29 +159,20 @@ func TestFuzzyBytesWithOutputsAnError(t *testing.T) {
 func BenchmarkRollingHash(b *testing.B) {
 	s := newSsdeepState()
 	for i := 0; i < b.N; i++ {
-		s.rollHash(byte(i))
+		s.rollingState.rollHash(byte(i))
 	}
 }
 
 func BenchmarkSumHash(b *testing.B) {
-	testHash := hashInit
+	var testHash byte = hashInit
 	data := []byte("Hereyougojustsomedatatomakeyouhappy")
 	for i := 0; i < b.N; i++ {
 		testHash = sumHash(data[rand.Intn(len(data))], testHash)
 	}
 }
 
-func BenchmarkBlockSize(b *testing.B) {
-	s := newSsdeepState()
-	for i := 0; i < b.N; i++ {
-		s.setBlockSize(207160)
-	}
-}
-
 func BenchmarkProcessByte(b *testing.B) {
 	s := newSsdeepState()
-	s.blockSize = 42
-	s.newRollingState()
 	for i := 0; i < b.N; i++ {
 		s.processByte(byte(i))
 	}
