@@ -34,8 +34,7 @@ var (
 )
 
 type rollingState struct {
-	window [rollingWindow]byte
-	_      byte
+	window [rollingWindow + 1]byte
 	h1     uint32
 	h2     uint32
 	h3     uint32
