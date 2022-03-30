@@ -14,6 +14,11 @@ var (
 	ErrFileTooBig   = errors.New("input file length exceeds max processable length")
 )
 
+type Hash interface {
+	io.Writer
+	Sum(b []byte) []byte
+}
+
 const (
 	rollingWindow     = 7
 	blockMin          = 3
