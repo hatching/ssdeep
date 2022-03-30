@@ -1,3 +1,3 @@
-module github.com/glaslos/ssdeep
+module github.com/hatching/ssdeep
 
 go 1.17
