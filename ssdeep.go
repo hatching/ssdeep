@@ -132,6 +132,7 @@ func (state *ssdeepState) processByte(b byte) {
 			block.tail2 = block.blockHash2
 			if len(block.hashString) < spamSumLength-1 {
 				block.hashString = append(block.hashString, block.tail1)
+				block.tail1 = 0
 				block.blockHash1 = hashInit
 				if len(block.hashString) < halfspamSumLength {
 					block.blockHash2 = hashInit
@@ -190,6 +191,11 @@ func (state *ssdeepState) digest() (string, error) {
 	}
 	var bl1 = state.blocks[i]
 	var bl2 = state.blocks[i+1]
+	if i >= state.iEnd-1 {
+		bl2 = state.blocks[i]
+		bl2.hashString = append([]byte{}, bl1.hashString...)
+	}
+
 	var rh = state.rollingState.rollSum()
 
 	if len(bl2.hashString) > halfspamSumLength-1 {
@@ -200,7 +206,7 @@ func (state *ssdeepState) digest() (string, error) {
 		bl1.hashString = append(bl1.hashString, bl1.blockHash1)
 		bl2.hashString = append(bl2.hashString, bl2.blockHash2)
 	} else {
-		if len(bl1.hashString) == spamSumLength-1 {
+		if len(bl1.hashString) == spamSumLength-1 && bl1.tail1 != 0 {
 			bl1.hashString = append(bl1.hashString, bl1.tail1)
 		}
 		if bl2.tail2 != 0 {
